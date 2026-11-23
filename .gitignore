@@ -1,3 +1,13 @@
-.git
+# System & Editor
 .DS_Store
+Thumbs.db
 *.log
+.vscode/
+.idea/
+
+# Database setup scripts (local only)
+*.sql
+*.backup
+
+# Environment / Keys
+.env*
