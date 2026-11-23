@@ -1458,7 +1458,22 @@
         if (useSB) {
           const { data, error } = await sb.from('menstrual_records').select('*').order('start_date', { ascending: false });
           if (error) throw error;
-          recs = data || [];
+          
+          // Jika tabel di Supabase masih kosong, otomatis masukkan 29 data awal Aulia
+          if (!data || data.length === 0) {
+            console.log('Tabel Supabase kosong. Melakukan auto-seed 29 catatan...');
+            const { error: seedErr } = await sb.from('menstrual_records').insert(SEED);
+            if (!seedErr) {
+              const { data: seededData } = await sb.from('menstrual_records').select('*').order('start_date', { ascending: false });
+              recs = seededData || [];
+              toast('29 Catatan awal Aulia otomatis disinkronkan ke Supabase.', 'ok');
+            } else {
+              console.warn('Auto-seed error:', seedErr);
+              recs = [];
+            }
+          } else {
+            recs = data;
+          }
         } else {
           recs = [...localRecs].sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
         }
@@ -1549,7 +1564,7 @@
       }
       v.filter(r => r.end_date && r.end_date >= r.start_date).forEach(r => {
         const d = diff(r.start_date, r.end_date) + 1;
-        if (d >= 1 && d <= 14) durs.push(d);
+        if (d >= 1 && d <= 25) durs.push(d);
       });
       return {
         cy: cycs.length ? Math.round(avg(cycs)) : 28,
@@ -1562,7 +1577,7 @@
       const { cy, du, last } = stats();
       if (!last) return [];
       return Array.from({ length: n }, (_, i) => {
-        const s = addD(new Date(last.start_date), cy * (i + 1));
+        const s = addD(new Date(last.start_date + 'T00:00:00'), cy * (i + 1));
         const e = addD(new Date(s), du - 1);
         const nx = addD(new Date(s), cy);
         return { s, e, fs: addD(nx, -16), fe: addD(nx, -12) };
@@ -1844,9 +1859,11 @@
     // UTILS
     // ═══════════════════════════════════════════════════
     function overlap(r, existing) {
-      const ns = new Date(r.start_date), ne = new Date(r.end_date || r.start_date);
+      const ns = r.start_date;
+      const ne = r.end_date || r.start_date;
       for (const x of existing) {
-        const xs = new Date(x.start_date), xe = new Date(x.end_date || x.start_date);
+        const xs = x.start_date;
+        const xe = x.end_date || x.start_date;
         if (xs > xe) continue;
         if (ns <= xe && ne >= xs) return true;
       }
