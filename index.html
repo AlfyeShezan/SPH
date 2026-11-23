@@ -1023,49 +1023,210 @@
       color: var(--accent);
     }
 
-    /* ── RESPONSIVE ── */
+    /* ── RESPONSIVE SYSTEM: DESKTOP, TABLET & SMARTPHONE ── */
+
+    /* Max-width container agar tidak terlalu melebar di layar monitor besar */
+    .page {
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+
+    /* ── 1. TABLET (768px - 1024px) ── */
+    @media (min-width: 769px) and (max-width: 1024px) {
+      :root {
+        --sidebar: 200px;
+      }
+
+      .main {
+        padding: 24px 20px;
+      }
+
+      .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      .phase-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      .dash-next {
+        padding: 18px 20px;
+      }
+
+      .dash-next-date {
+        font-size: 20px;
+      }
+
+      .form-2col {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+    }
+
+    /* ── 2. SMARTPHONE / MOBILE (< 768px) ── */
     @media (max-width: 768px) {
+      :root {
+        --nav-h: 62px;
+      }
+
       .sidebar {
-        display: none;
+        display: none !important;
       }
 
       .bnav {
-        display: block;
+        display: block !important;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        height: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+      }
+
+      .bnav-inner {
+        height: var(--nav-h);
+      }
+
+      .bnav-btn {
+        padding: 6px 2px;
+        min-height: 48px;
+        font-size: 10.5px;
+        font-weight: 500;
+      }
+
+      .bnav-btn .ic {
+        font-size: 19px;
+        line-height: 1;
       }
 
       #app {
         height: auto;
         min-height: 100vh;
+        display: block;
       }
 
       .main {
-        padding: 20px 16px;
-        padding-bottom: calc(var(--nav-h) + 20px);
+        padding: 16px 14px;
+        padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 24px);
         height: auto;
         overflow-y: visible;
       }
 
-      .stats-row {
-        grid-template-columns: 1fr 1fr;
+      .page-head {
+        margin-bottom: 18px;
       }
 
-      .phase-row {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .form-2col {
-        grid-template-columns: 1fr;
+      .page-head h1 {
+        font-size: 18px;
       }
 
       .dash-next {
         flex-direction: column;
         align-items: flex-start;
+        padding: 16px;
+        gap: 12px;
+      }
+
+      .dash-next-date {
+        font-size: 19px;
+      }
+
+      .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+
+      .stat {
+        padding: 12px;
+      }
+
+      .stat-val {
+        font-size: 18px;
+      }
+
+      .stat-lbl {
+        font-size: 11px;
+      }
+
+      .phase-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+
+      .phase-cell {
+        padding: 10px;
+      }
+
+      .form-2col {
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+
+      .card {
+        padding: 16px 14px;
+      }
+
+      /* Kalender responsif di HP */
+      .cal-day {
+        font-size: 12px;
+        min-height: 36px;
+      }
+
+      .cal-hdr {
+        font-size: 10.5px;
+      }
+
+      .cal-legend {
+        gap: 10px;
+        font-size: 11px;
+      }
+
+      /* Filter riwayat scrollable horizontal jika sempit */
+      .filter-row {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .flt {
+        flex-shrink: 0;
+      }
+
+      .hist-row {
+        padding: 10px 12px;
+      }
+
+      .icon-btn {
+        width: 32px;
+        height: 32px;
+      }
+
+      .btn-primary, .btn-ghost {
+        width: 100%;
+        justify-content: center;
+        padding: 11px 16px;
+      }
+
+      .btn-row {
+        flex-direction: column;
       }
     }
 
-    @media (max-width: 480px) {
+    /* ── 3. SMALL MOBILE (< 380px) ── */
+    @media (max-width: 380px) {
+      .bnav-btn {
+        font-size: 9.5px;
+      }
+
+      .bnav-btn .ic {
+        font-size: 17px;
+      }
+
+      .phase-row {
+        grid-template-columns: 1fr;
+      }
+
       .stats-row {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr;
       }
     }
   </style>
