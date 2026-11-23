@@ -1538,15 +1538,15 @@
       { start_date: '2025-08-05', end_date: '2025-08-11', record_type: 'menstruasi', notes: '', needs_review: false },
       { start_date: '2025-08-23', end_date: '2025-09-02', record_type: 'menstruasi', notes: '', needs_review: false },
       // ⚠️ #13 – tumpang tindih, kemungkinan typo 14-09-2025
-      { start_date: '2025-08-14', end_date: '2025-09-23', record_type: 'menstruasi', notes: 'Data asli: 14-08-2025 s/d 23-09-2025 — kemungkinan typo, harusnya 14-09-2025', needs_review: true },
+      { start_date: '2025-09-14', end_date: '2025-09-23', record_type: 'menstruasi', notes: '', needs_review: false },
       { start_date: '2025-10-07', end_date: '2025-10-17', record_type: 'menstruasi', notes: '', needs_review: false },
       { start_date: '2025-10-31', end_date: '2025-11-12', record_type: 'menstruasi', notes: '', needs_review: false },
       // ⚠️ #16 – start 2026 > end 2025
-      { start_date: '2026-10-26', end_date: '2025-12-05', record_type: 'menstruasi', notes: 'Data asli: 26-10-2026 s/d 05-12-2025 — tanggal tidak valid', needs_review: true },
+      { start_date: '2025-11-26', end_date: '2025-12-05', record_type: 'menstruasi', notes: '', needs_review: false },
       { start_date: '2025-12-20', end_date: '2026-01-01', record_type: 'menstruasi', notes: '', needs_review: false },
       { start_date: '2026-01-14', end_date: '2026-01-25', record_type: 'menstruasi', notes: '', needs_review: false },
       // ⚠️ #19 – end 2025 < start 2026
-      { start_date: '2026-02-08', end_date: '2025-02-16', record_type: 'menstruasi', notes: 'Data asli: 08-02-2026 s/d 16-02-2025 — tahun end kemungkinan typo, harusnya 2026', needs_review: true },
+      { start_date: '2026-02-08', end_date: '2026-02-16', record_type: 'menstruasi', notes: '', needs_review: false },
       { start_date: '2026-02-27', end_date: '2026-03-12', record_type: 'menstruasi', notes: '', needs_review: false },
       { start_date: '2026-03-24', end_date: '2026-04-03', record_type: 'menstruasi', notes: '', needs_review: false },
       { start_date: '2026-04-19', end_date: '2026-04-27', record_type: 'menstruasi', notes: '', needs_review: false },
@@ -1557,7 +1557,7 @@
       { start_date: '2026-09-09', end_date: '2026-09-15', record_type: 'menstruasi', notes: '', needs_review: false },
       { start_date: '2026-10-05', end_date: '2026-10-18', record_type: 'menstruasi', notes: '', needs_review: false },
       // ⚠️ #29 – rentang ~1 tahun
-      { start_date: '2025-11-16', end_date: '2026-11-23', record_type: 'menstruasi', notes: 'Data asli: 16-11-2025 s/d 23-11-2026 — rentang hampir 1 tahun, kemungkinan typo', needs_review: true },
+      { start_date: '2026-11-16', end_date: '2026-11-23', record_type: 'menstruasi', notes: '', needs_review: false },
     ];
 
     // ═══════════════════════════════════════════════════
@@ -1764,9 +1764,11 @@
       document.getElementById('st-total').textContent = recs.length;
 
       if (st.last) {
-        document.getElementById('st-last').textContent = fmt(st.last.start_date, 'short');
-        const ago = diff(st.last.start_date, iso(today));
-        document.getElementById('st-last-sub').textContent = ago === 0 ? 'Hari ini' : ago + ' hari lalu';
+        // Tampilkan hari terakhir haid (tanggal selesai); prediksi tetap dihitung dari tanggal mulai
+        const lastDay = (st.last.end_date && st.last.end_date >= st.last.start_date) ? st.last.end_date : st.last.start_date;
+        document.getElementById('st-last').textContent = fmt(lastDay, 'short');
+        const ago = Math.max(0, diff(lastDay, iso(today)));
+        document.getElementById('st-last-sub').textContent = 'Haid terakhir · ' + (ago === 0 ? 'hari ini' : ago + ' hari lalu');
       } else {
         document.getElementById('st-last').textContent = '—';
         document.getElementById('st-last-sub').textContent = 'Haid terakhir';
