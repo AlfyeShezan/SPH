@@ -1765,7 +1765,7 @@
 
       if (st.last) {
         document.getElementById('st-last').textContent = fmt(st.last.start_date, 'short');
-        const ago = diff(st.last.start_date, today.toISOString().slice(0, 10));
+        const ago = diff(st.last.start_date, iso(today));
         document.getElementById('st-last-sub').textContent = ago === 0 ? 'Hari ini' : ago + ' hari lalu';
       } else {
         document.getElementById('st-last').textContent = '—';
@@ -1835,21 +1835,21 @@
         const s = new Date(r.start_date + 'T00:00:00'), e = r.end_date ? new Date(r.end_date + 'T00:00:00') : new Date(s);
         if (isNaN(s) || isNaN(e) || e < s) return;
         for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
-          const k = d.toISOString().slice(0, 10);
+          const k = iso(d);
           if (r.record_type === 'menstruasi') mensSet.add(k);
           else if (r.record_type === 'flek') flekSet.add(k);
         }
       });
       calPreds.forEach(p => {
-        for (let d = new Date(p.s); d <= p.e; d.setDate(d.getDate() + 1)) predSet.add(d.toISOString().slice(0, 10));
+        for (let d = new Date(p.s); d <= p.e; d.setDate(d.getDate() + 1)) predSet.add(iso(d));
         for (let d = new Date(p.fs); d <= p.fe; d.setDate(d.getDate() + 1)) {
-          const k = d.toISOString().slice(0, 10);
+          const k = iso(d);
           if (!mensSet.has(k) && !predSet.has(k)) fertSet.add(k);
         }
       });
 
       const today = new Date(); today.setHours(0, 0, 0, 0);
-      const todayStr = today.toISOString().slice(0, 10);
+      const todayStr = iso(today);
       const fd = new Date(calY, calM, 1).getDay();
       const dim = new Date(calY, calM + 1, 0).getDate();
       const dip = new Date(calY, calM, 0).getDate();
@@ -1875,7 +1875,7 @@
 
     function showDay(ds) {
       const dr = recs.filter(r => { const s = r.start_date, e = r.end_date || r.start_date; return ds >= s && ds <= e; });
-      const ip = calPreds.some(p => { const s = p.s.toISOString().slice(0, 10), e = p.e.toISOString().slice(0, 10); return ds >= s && ds <= e; });
+      const ip = calPreds.some(p => { const s = iso(p.s), e = iso(p.e); return ds >= s && ds <= e; });
       const panel = document.getElementById('day-panel');
       if (!dr.length && !ip) { panel.style.display = 'none'; return; }
       let h = `<div class="day-panel-title">${fmt(ds, 'long')}</div>`;
@@ -2116,7 +2116,7 @@
         type: 'application/vnd.ms-excel;charset=utf-8'
       });
       
-      const fileName = `Riwayat_Menstruasi_Aulia_${new Date().toISOString().slice(0, 10)}.xls`;
+      const fileName = `Riwayat_Menstruasi_Aulia_${iso(new Date())}.xls`;
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
       link.download = fileName;
@@ -2152,6 +2152,7 @@
       const ns = r.start_date;
       const ne = r.end_date || r.start_date;
       for (const x of existing) {
+        if (x.needs_review) continue; // abaikan catatan bermasalah
         const xs = x.start_date;
         const xe = x.end_date || x.start_date;
         if (xs > xe) continue;
@@ -2163,6 +2164,9 @@
     function diff(a, b) {
       const toD = s => new Date(typeof s === 'string' ? s + 'T00:00:00' : s);
       return Math.round((toD(b) - toD(a)) / 86400000);
+    }
+    function iso(d) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
     function addD(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
     function avg(a) { return a.reduce((x, y) => x + y, 0) / a.length; }
