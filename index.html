@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aulia – Kalender Menstruasi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --accent: #e05a7a;
+      --accent-l: #fdf0f3;
+      --accent-m: #f9d0d9;
+      --border: #ebebeb;
+      --bg: #f7f7f7;
+      --white: #ffffff;
+      --text-1: #1a1a1a;
+      --text-2: #555555;
+      --text-3: #999999;
+      --radius: 6px;
+      --sidebar: 220px;
+      --nav-h: 58px;
+    }
+
+    html,
+    body {
+      height: 100%;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text-1);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ── LAYOUT ── */
+    #app {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: var(--sidebar);
+      background: var(--white);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .s-logo {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .s-logo strong {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-1);
+      letter-spacing: -.2px;
+    }
+
+    .s-logo span {
+      display: block;
+      font-size: 11px;
+      color: var(--text-3);
+      margin-top: 2px;
+      font-weight: 400;
+    }
+
+    .s-nav {
+      flex: 1;
+      padding: 12px 10px;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 9px 12px;
+      border: none;
+      background: none;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 13.5px;
+      color: var(--text-2);
+      cursor: pointer;
+      text-align: left;
+      margin-bottom: 1px;
+      transition: background .15s, color .15s;
+    }
+
+    .nav-btn:hover {
+      background: var(--bg);
+      color: var(--text-1);
+    }
+
+    .nav-btn.active {
+      background: var(--accent-l);
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .nav-btn .ic {
+      font-size: 14px;
+      width: 18px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .s-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .s-footer p {
+      font-size: 11px;
+      color: var(--text-3);
+    }
+
+    /* ── MAIN ── */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 36px;
+      background: var(--bg);
+    }
+
+    /* ── PAGE ── */
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    .page-head {
+      margin-bottom: 28px;
+    }
+
+    .page-head h1 {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-1);
+      letter-spacing: -.3px;
+    }
+
+    .page-head p {
+      font-size: 13px;
+      color: var(--text-3);
+      margin-top: 3px;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    /* ── DASHBOARD ── */
+    .dash-next {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .dash-next-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--text-3);
+      margin-bottom: 4px;
+    }
+
+    .dash-next-date {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text-1);
+      letter-spacing: -.4px;
+    }
+
+    .dash-next-cd {
+      font-size: 13px;
+      color: var(--text-2);
+      margin-top: 2px;
+    }
+
+    .dash-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 3px;
+      font-size: 11.5px;
+      font-weight: 500;
+      background: var(--accent-l);
+      color: var(--accent);
+    }
+
+    .tag.gray {
+      background: var(--bg);
+      color: var(--text-2);
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+
+    .stat-val {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-1);
+      letter-spacing: -.4px;
+    }
+
+    .stat-lbl {
+      font-size: 11.5px;
+      color: var(--text-3);
+      margin-top: 3px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .section-head h2 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-1);
+    }
+
+    .link-btn {
+      font-size: 12px;
+      color: var(--accent);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    /* Phase row */
+    .phase-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .phase-cell {
+      background: var(--bg);
+      border-radius: var(--radius);
+      padding: 12px;
+    }
+
+    .phase-cell-name {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-1);
+      margin-bottom: 2px;
+    }
+
+    .phase-cell-dates {
+      font-size: 11px;
+      color: var(--text-3);
+    }
+
+    .phase-line {
+      height: 2px;
+      border-radius: 1px;
+      margin-bottom: 8px;
+    }
+
+    /* Recent list */
+    .recent-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .recent-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .recent-row:last-child {
+      border-bottom: none;
+    }
+
+    .rec-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .rec-info {
+      flex: 1;
+    }
+
+    .rec-date {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-1);
+    }
+
+    .rec-meta {
+      font-size: 11.5px;
+      color: var(--text-3);
+      margin-top: 1px;
+    }
+
+    /* ── CALENDAR ── */
+    .cal-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .cal-nav h2 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-1);
+    }
+
+    .cal-arr {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      color: var(--text-2);
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color .15s;
+    }
+
+    .cal-arr:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .cal-legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .leg {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11.5px;
+      color: var(--text-3);
+    }
+
+    .leg-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+    }
+
+    .cal-hdr {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-3);
+      padding: 6px 0;
+      letter-spacing: .3px;
+    }
+
+    .cal-day {
+      aspect-ratio: 1;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12.5px;
+      cursor: pointer;
+      color: var(--text-1);
+      transition: background .12s;
+    }
+
+    .cal-day:hover:not(.empty) {
+      background: var(--bg);
+    }
+
+    .cal-day.empty {
+      cursor: default;
+      color: var(--text-3);
+    }
+
+    .cal-day.other {
+      color: var(--border);
+      cursor: default;
+    }
+
+    .cal-day.today {
+      font-weight: 600;
+      border: 1.5px solid var(--accent);
+      color: var(--accent);
+    }
+
+    .cal-day.mens {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 500;
+    }
+
+    .cal-day.spotting {
+      background: var(--accent-m);
+      color: var(--accent);
+    }
+
+    .cal-day.pred {
+      background: #ede9fe;
+      color: #7c3aed;
+    }
+
+    .cal-day.fertile {
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+
+    .day-panel {
+      margin-top: 12px;
+      padding: 14px;
+      background: var(--bg);
+      border-radius: var(--radius);
+      display: none;
+    }
+
+    .day-panel-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-2);
+      margin-bottom: 8px;
+    }
+
+    .day-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-weight: 500;
+      margin-right: 6px;
+      margin-bottom: 4px;
+    }
+
+    /* ── FORM ── */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-2);
+      margin-bottom: 5px;
+    }
+
+    .input {
+      width: 100%;
+      padding: 9px 11px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 13.5px;
+      color: var(--text-1);
+      background: var(--white);
+      outline: none;
+      transition: border-color .15s;
+    }
+
+    .input:focus {
+      border-color: var(--accent);
+    }
+
+    textarea.input {
+      resize: vertical;
+      min-height: 72px;
+    }
+
+    .form-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    /* Radio */
+    .radio-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .radio-opt {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 13px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-2);
+      transition: border-color .15s, background .15s;
+      user-select: none;
+    }
+
+    .radio-opt input {
+      display: none;
+    }
+
+    .radio-opt.on {
+      border-color: var(--accent);
+      background: var(--accent-l);
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .radio-mark {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      flex-shrink: 0;
+      transition: background .12s, border-color .12s;
+    }
+
+    .radio-opt.on .radio-mark {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .overlap-note {
+      display: none;
+      margin-top: 8px;
+      padding: 8px 11px;
+      background: #fefce8;
+      border: 1px solid #fde68a;
+      border-radius: var(--radius);
+      font-size: 12px;
+      color: #92400e;
+    }
+
+    /* Buttons */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 20px;
+      border-radius: var(--radius);
+      background: var(--accent);
+      color: #fff;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+
+    .btn-primary:hover {
+      opacity: .88;
+    }
+
+    .btn-primary:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 16px;
+      border-radius: var(--radius);
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-2);
+      font-family: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color .15s;
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--text-2);
+    }
+
+    .btn-danger {
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      font-family: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+
+    .btn-danger:hover {
+      background: #fee2e2;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .icon-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 12px;
+      background: var(--white);
+      transition: border-color .15s;
+    }
+
+    .icon-btn:hover {
+      border-color: var(--text-2);
+    }
+
+    .icon-btn.red:hover {
+      border-color: #fca5a5;
+      background: #fef2f2;
+    }
+
+    /* ── HISTORY ── */
+    .filter-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .flt {
+      padding: 5px 13px;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      font-family: inherit;
+      font-size: 12px;
+      color: var(--text-2);
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .flt.on {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .hist-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .hist-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: border-color .15s;
+    }
+
+    .hist-row:hover {
+      border-color: #d4d4d4;
+    }
+
+    .hist-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .hist-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .hist-date {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-1);
+    }
+
+    .hist-meta {
+      font-size: 12px;
+      color: var(--text-3);
+      margin-top: 1px;
+    }
+
+    .hist-note {
+      font-size: 12px;
+      color: var(--text-2);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .hist-actions {
+      display: flex;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+
+    .flag {
+      display: inline-block;
+      font-size: 11px;
+      color: #92400e;
+      background: #fef3c7;
+      padding: 1px 6px;
+      border-radius: 2px;
+      margin-top: 3px;
+    }
+
+    /* ── SETTINGS ── */
+    .settings-block {
+      margin-bottom: 16px;
+    }
+
+    .settings-block h3 {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--text-3);
+      margin-bottom: 12px;
+    }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    .settings-row:last-child {
+      border-bottom: none;
+    }
+
+    .settings-key {
+      color: var(--text-2);
+    }
+
+    .settings-val {
+      color: var(--text-3);
+      font-size: 12px;
+    }
+
+    /* ── MODAL ── */
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .modal h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .modal p {
+      font-size: 13px;
+      color: var(--text-2);
+    }
+
+    .modal-btns {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    /* ── TOAST ── */
+    #toasts {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .tst {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      background: var(--white);
+      border: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-1);
+      pointer-events: all;
+      max-width: 300px;
+      animation: tIn .2s ease;
+    }
+
+    .tst.ok {
+      border-left: 3px solid #22c55e;
+    }
+
+    .tst.err {
+      border-left: 3px solid #ef4444;
+    }
+
+    .tst.info {
+      border-left: 3px solid #a855f7;
+    }
+
+    .tst.out {
+      animation: tOut .2s ease forwards;
+    }
+
+    /* ── SPINNER ── */
+    .spin {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, .4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: rotate .6s linear infinite;
+      display: inline-block;
+    }
+
+    /* ── EMPTY ── */
+    .empty {
+      padding: 48px 20px;
+      text-align: center;
+      color: var(--text-3);
+    }
+
+    .empty p {
+      font-size: 13px;
+      margin-top: 6px;
+    }
+
+    /* ── INFO BAR ── */
+    .info-bar {
+      padding: 10px 13px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 12px;
+      color: var(--text-2);
+      margin-bottom: 14px;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes tIn {
+      from {
+        opacity: 0;
+        transform: translateX(16px);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    @keyframes tOut {
+      from {
+        opacity: 1;
+      }
+
+      to {
+        opacity: 0;
+        transform: translateX(16px);
+      }
+    }
+
+    @keyframes rotate {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    .page.active {
+      animation: fadeUp .2s ease;
+    }
+
+    /* ── BOTTOM NAV ── */
+    .bnav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--nav-h);
+      background: var(--white);
+      border-top: 1px solid var(--border);
+      z-index: 100;
+    }
+
+    .bnav-inner {
+      display: flex;
+      height: 100%;
+    }
+
+    .bnav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 10px;
+      color: var(--text-3);
+      font-family: inherit;
+      transition: color .15s;
+    }
+
+    .bnav-btn .ic {
+      font-size: 18px;
+    }
+
+    .bnav-btn.active {
+      color: var(--accent);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .sidebar {
+        display: none;
+      }
+
+      .bnav {
+        display: block;
+      }
+
+      #app {
+        height: auto;
+        min-height: 100vh;
+      }
+
+      .main {
+        padding: 20px 16px;
+        padding-bottom: calc(var(--nav-h) + 20px);
+        height: auto;
+        overflow-y: visible;
+      }
+
+      .stats-row {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .phase-row {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .form-2col {
+        grid-template-columns: 1fr;
+      }
+
+      .dash-next {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stats-row {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="toasts"></div>
+
+  <div id="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="s-logo">
+        <strong>Aulia</strong>
+        <span>Kalender Menstruasi</span>
+      </div>
+      <nav class="s-nav">
+        <button class="nav-btn active" data-page="dashboard" onclick="go('dashboard')">
+          <span class="ic">○</span> Dashboard
+        </button>
+        <button class="nav-btn" data-page="calendar" onclick="go('calendar')">
+          <span class="ic">◻</span> Kalender
+        </button>
+        <button class="nav-btn" data-page="record" onclick="go('record')">
+          <span class="ic">+</span> Catat Haid
+        </button>
+        <button class="nav-btn" data-page="history" onclick="go('history')">
+          <span class="ic">≡</span> Riwayat
+        </button>
+        <button class="nav-btn" data-page="settings" onclick="go('settings')">
+          <span class="ic">◎</span> Pengaturan
+        </button>
+      </nav>
+      <div class="s-footer">
+        <p>Aulia · v1.0</p>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-head">
+          <h1 id="dash-title">Selamat datang, Aulia</h1>
+          <p id="dash-date"></p>
+        </div>
+
+        <div class="dash-next">
+          <div>
+            <div class="dash-next-label">Prediksi haid berikutnya</div>
+            <div class="dash-next-date" id="next-date">—</div>
+            <div class="dash-next-cd" id="next-cd"></div>
+          </div>
+          <div class="dash-tags" id="next-tags"></div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat">
+            <div class="stat-val" id="st-last">—</div>
+            <div class="stat-lbl" id="st-last-sub">Haid terakhir</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" id="st-cycle">—</div>
+            <div class="stat-lbl">Rata-rata siklus (hari)</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" id="st-dur">—</div>
+            <div class="stat-lbl">Rata-rata durasi (hari)</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" id="st-total">—</div>
+            <div class="stat-lbl">Total catatan</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px;">
+          <div class="section-head">
+            <h2>Fase siklus</h2>
+          </div>
+          <div class="phase-row" id="phases"></div>
+        </div>
+
+        <div class="card">
+          <div class="section-head">
+            <h2>Catatan terbaru</h2>
+            <button class="link-btn" onclick="go('history')">Lihat semua</button>
+          </div>
+          <div class="recent-list" id="recent"></div>
+        </div>
+      </div>
+
+      <!-- CALENDAR -->
+      <div class="page" id="page-calendar">
+        <div class="page-head">
+          <h1>Kalender</h1>
+          <p>Data aktual dan prediksi siklus</p>
+        </div>
+        <div class="card">
+          <div class="cal-nav">
+            <button class="cal-arr" onclick="prevM()">‹</button>
+            <h2 id="cal-title"></h2>
+            <button class="cal-arr" onclick="nextM()">›</button>
+          </div>
+          <div class="cal-legend">
+            <div class="leg">
+              <div class="leg-dot" style="background:var(--accent);"></div>Haid
+            </div>
+            <div class="leg">
+              <div class="leg-dot" style="background:var(--accent-m);"></div>Flek
+            </div>
+            <div class="leg">
+              <div class="leg-dot" style="background:#ede9fe;"></div>Prediksi
+            </div>
+            <div class="leg">
+              <div class="leg-dot" style="background:#e0f2fe;"></div>Masa subur
+            </div>
+          </div>
+          <div class="cal-grid" id="cal"></div>
+          <div class="day-panel" id="day-panel"></div>
+        </div>
+      </div>
+
+      <!-- CATAT HAID -->
+      <div class="page" id="page-record">
+        <div class="page-head">
+          <h1 id="rec-title">Catat haid</h1>
+          <p id="rec-sub">Tambahkan data baru</p>
+        </div>
+        <div class="card">
+          <input type="hidden" id="edit-id" />
+          <div class="form-2col">
+            <div class="form-group">
+              <label>Tanggal mulai *</label>
+              <input type="date" class="input" id="f-start" />
+            </div>
+            <div class="form-group">
+              <label>Tanggal selesai</label>
+              <input type="date" class="input" id="f-end" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Jenis catatan</label>
+            <div class="radio-row">
+              <label class="radio-opt on" onclick="pickType(this,'menstruasi')">
+                <input type="radio" name="rt" value="menstruasi" checked /><span class="radio-mark"></span>Menstruasi
+              </label>
+              <label class="radio-opt" onclick="pickType(this,'flek')">
+                <input type="radio" name="rt" value="flek" /><span class="radio-mark"></span>Flek
+              </label>
+              <label class="radio-opt" onclick="pickType(this,'lainnya')">
+                <input type="radio" name="rt" value="lainnya" /><span class="radio-mark"></span>Lainnya
+              </label>
+            </div>
+            <div class="overlap-note" id="ov-note">Tanggal ini tumpang tindih dengan catatan lain. Data akan disimpan
+              namun ditandai untuk diperiksa.</div>
+          </div>
+          <div class="form-group">
+            <label>Catatan</label>
+            <textarea class="input" id="f-notes" placeholder="Keluhan, gejala, atau info tambahan…"></textarea>
+          </div>
+          <div class="btn-row">
+            <button class="btn-primary" id="btn-save" onclick="saveRec()">
+              <span id="save-txt">Simpan</span>
+            </button>
+            <button class="btn-ghost" onclick="cancelEdit()">Batal</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIWAYAT -->
+      <div class="page" id="page-history">
+        <div class="page-head">
+          <h1>Riwayat</h1>
+          <p id="hist-sub">Semua catatan</p>
+        </div>
+        <div class="info-bar">Data ⚠️ memiliki tanggal tidak valid dan dikecualikan dari prediksi sampai dikoreksi.
+        </div>
+        <div class="filter-row">
+          <button class="flt on" onclick="setFilter('all',this)">Semua</button>
+          <button class="flt" onclick="setFilter('menstruasi',this)">Menstruasi</button>
+          <button class="flt" onclick="setFilter('flek',this)">Flek</button>
+          <button class="flt" onclick="setFilter('lainnya',this)">Lainnya</button>
+          <button class="flt" onclick="setFilter('flagged',this)">⚠ Perlu diperiksa</button>
+        </div>
+        <div class="hist-list" id="hist-list"></div>
+      </div>
+
+      <!-- PENGATURAN -->
+      <div class="page" id="page-settings">
+        <div class="page-head">
+          <h1>Pengaturan</h1>
+        </div>
+
+        <div class="card" style="margin-bottom:12px;">
+          <div class="settings-block">
+            <h3>Profil</h3>
+            <div class="form-group">
+              <label>Nama</label>
+              <input type="text" class="input" id="s-name" value="Aulia" />
+            </div>
+            <button class="btn-primary" onclick="saveName()">Simpan</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:12px;">
+          <div class="settings-block">
+            <h3>Statistik</h3>
+            <div class="settings-row">
+              <span class="settings-key">Rata-rata siklus</span>
+              <span class="settings-val" id="ss-cycle">—</span>
+            </div>
+            <div class="settings-row">
+              <span class="settings-key">Rata-rata durasi haid</span>
+              <span class="settings-val" id="ss-dur">—</span>
+            </div>
+            <div class="settings-row">
+              <span class="settings-key">Catatan valid</span>
+              <span class="settings-val" id="ss-valid">—</span>
+            </div>
+            <div class="settings-row">
+              <span class="settings-key">Perlu diperiksa</span>
+              <span class="settings-val" id="ss-review">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:12px;">
+          <div class="settings-block">
+            <h3>Database</h3>
+            <div class="settings-row">
+              <span class="settings-key">Status</span>
+              <span class="settings-val" id="ss-db">Memeriksa…</span>
+            </div>
+            <div class="settings-row">
+              <span class="settings-key">Sumber data</span>
+              <span class="settings-val" id="ss-src">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="settings-block">
+            <h3>Ekspor</h3>
+            <button class="btn-ghost" onclick="exportCSV()">Ekspor CSV</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bnav">
+    <div class="bnav-inner">
+      <button class="bnav-btn active" data-page="dashboard" onclick="go('dashboard')">
+        <span class="ic">○</span>Beranda
+      </button>
+      <button class="bnav-btn" data-page="calendar" onclick="go('calendar')">
+        <span class="ic">◻</span>Kalender
+      </button>
+      <button class="bnav-btn" data-page="record" onclick="go('record')">
+        <span class="ic">+</span>Catat
+      </button>
+      <button class="bnav-btn" data-page="history" onclick="go('history')">
+        <span class="ic">≡</span>Riwayat
+      </button>
+      <button class="bnav-btn" data-page="settings" onclick="go('settings')">
+        <span class="ic">◎</span>Setelan
+      </button>
+    </div>
+  </nav>
+
+  <!-- DELETE MODAL -->
+  <div id="del-modal" style="display:none;" class="modal-bg" onclick="closeDel(event)">
+    <div class="modal">
+      <h3>Hapus catatan</h3>
+      <p>Yakin ingin menghapus? Data tidak dapat dikembalikan.</p>
+      <div class="modal-btns">
+        <button class="btn-ghost" onclick="closeDel()">Batal</button>
+        <button class="btn-danger" onclick="doDel()">Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════════════
+    // KONFIGURASI – isi dengan kredensial Supabase Anda
+    // ═══════════════════════════════════════════════════
+    const SUPABASE_URL = 'https://nbtvfqgedyrdpemmcwvp.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_pDslOfpLKdUWtrUz-5MYbg_BD7VWghp';
+
+    // ═══════════════════════════════════════════════════
+    // 29 DATA ASLI AULIA
+    // 4 data bermasalah → needs_review: true (tidak masuk prediksi)
+    // ═══════════════════════════════════════════════════
+    const SEED = [
+      { start_date: '2024-12-17', end_date: '2025-01-03', record_type: 'menstruasi', notes: '', needs_review: false },
+      { start_date: '2025-01-13', end_date: '2025-01-29', record_type: 'menstruasi', notes: '', needs_review: false },
+      { start_date: '2025-02-06', end_date: '2025-02-18', record_type: 'menstruasi', notes: '', needs_review: false },
+      { start_date: '2025-03-01', end_date: '2025-03-10', record_type: 'menstruasi', notes: '', needs_review: false },
+      { start_date: '2025-03-23', end_date: '2025-04-02', record_type: 'menstruasi', notes: '', needs_review: false },
+      { start_date: '2025-04-17', end_date: '2025-04-25', record_type: 'menstruasi', notes: '', needs_review: false },
+      { start_date: '2025-05-10', end_date: '2025-05-20', record_type: 'menstruasi', notes: '', needs_review: false },
+      { start_date: '2025-05-31', end_date: '2025-06-13', record_type: 'menstruasi', notes: '', needs_review: false },
+      { start_date: '2025-06-25', end_date: '2025-07-05', record_type: 'menstruasi', notes: '', needs_review: false },
+      { start_date: '2025-07-15', end_date: '2025-07-24', record_type: 'menstruasi', notes: '', needs_review: false },
+      { start_date: '2025-08-05', end_date: '2025-08-11', record_type: 'menstruasi', notes: '', needs_review: false },
+      { start_date: '2025-08-23', end_date: '2025-09-02', record_type: 'menstruasi', notes: '', needs_review: false },
+      // ⚠️ #13 – tumpang tindih, kemungkinan typo 14-09-2025
+      { start_date: '2025-08-14', end_date: '2025-09-23', record_type: 'menstruasi', notes: 'Data asli: 14-08-2025 s/d 23-09-2025 — kemungkinan typo, harusnya 14-09-2025', needs_review: true },
+      { start_date: '2025-10-07', end_date: '2025-10-17', record_type: 'menstruasi', notes: '', needs_review: false },
+      { start_date: '2025-10-31', end_date: '2025-11-12', record_type: 'menstruasi', notes: '', needs_review: false },
+      // ⚠️ #16 – start 2026 > end 2025
+      { start_date: '2026-10-26', end_date: '2025-12-05', record_type: 'menstruasi', notes: 'Data asli: 26-10-2026 s/d 05-12-2025 — tanggal tidak valid', needs_review: true },
+      { start_date: '2025-12-20', end_date: '2026-01-01', record_type: 'menstruasi', notes: '', needs_review: false },
+      { start_date: '2026-01-14', end_date: '2026-01-25', record_type: 'menstruasi', notes: '', needs_review: false },
+      // ⚠️ #19 – end 2025 < start 2026
+      { start_date: '2026-02-08', end_date: '2025-02-16', record_type: 'menstruasi', notes: 'Data asli: 08-02-2026 s/d 16-02-2025 — tahun end kemungkinan typo, harusnya 2026', needs_review: true },
+      { start_date: '2026-02-27', end_date: '2026-03-12', record_type: 'menstruasi', notes: '', needs_review: false },
+      { start_date: '2026-03-24', end_date: '2026-04-03', record_type: 'menstruasi', notes: '', needs_review: false },
+      { start_date: '2026-04-19', end_date: '2026-04-27', record_type: 'menstruasi', notes: '', needs_review: false },
+      { start_date: '2026-05-07', end_date: '2026-05-22', record_type: 'menstruasi', notes: '', needs_review: false },
+      { start_date: '2026-06-12', end_date: '2026-06-12', record_type: 'flek', notes: 'Flek saja', needs_review: false },
+      { start_date: '2026-06-24', end_date: '2026-07-02', record_type: 'menstruasi', notes: '', needs_review: false },
+      { start_date: '2026-08-01', end_date: '2026-08-07', record_type: 'menstruasi', notes: '', needs_review: false },
+      { start_date: '2026-09-09', end_date: '2026-09-15', record_type: 'menstruasi', notes: '', needs_review: false },
+      { start_date: '2026-10-05', end_date: '2026-10-18', record_type: 'menstruasi', notes: '', needs_review: false },
+      // ⚠️ #29 – rentang ~1 tahun
+      { start_date: '2025-11-16', end_date: '2026-11-23', record_type: 'menstruasi', notes: 'Data asli: 16-11-2025 s/d 23-11-2026 — rentang hampir 1 tahun, kemungkinan typo', needs_review: true },
+    ];
+
+    // ═══════════════════════════════════════════════════
+    // STATE
+    // ═══════════════════════════════════════════════════
+    let sb = null, useSB = false;
+    let recs = [], localRecs = [], localCtr = 1000;
+    let calY = new Date().getFullYear(), calM = new Date().getMonth();
+    let calPreds = [], editId = null, delId = null, histFilt = 'all';
+    let userName = localStorage.getItem('aulia_name') || 'Aulia';
+
+    // ═══════════════════════════════════════════════════
+    // BOOT
+    // ═══════════════════════════════════════════════════
+    document.addEventListener('DOMContentLoaded', async () => {
+      document.getElementById('dash-date').textContent =
+        new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      document.getElementById('dash-title').textContent = `Selamat datang, ${userName}`;
+      document.getElementById('s-name').value = userName;
+
+      if (!SUPABASE_URL.includes('YOUR_PROJECT_ID')) {
+        try {
+          // Bersihkan URL jika ada trailing slash atau /rest/v1
+          const cleanUrl = SUPABASE_URL.replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
+          sb = window.supabase.createClient(cleanUrl, SUPABASE_ANON_KEY);
+          const { error } = await sb.from('menstrual_records').select('id').limit(1);
+          if (!error) {
+            useSB = true;
+            document.getElementById('ss-db').textContent = 'Terhubung';
+            document.getElementById('ss-src').textContent = 'Supabase PostgreSQL';
+            document.getElementById('hist-sub').textContent = 'Tersimpan di Supabase';
+          } else {
+            console.error('Supabase query error:', error);
+            initLocal('Gagal: ' + (error.message || error.details || 'Tabel belum ada / RLS block'));
+          }
+        } catch (e) {
+          console.error('Supabase init error:', e);
+          initLocal('Gagal: ' + (e.message || 'Koneksi error'));
+        }
+      } else {
+        initLocal('Mode lokal (Belum dikonfigurasi)');
+      }
+
+      await loadRecs();
+      go('dashboard');
+    });
+
+    function initLocal(statusMsg = 'Mode lokal') {
+      document.getElementById('ss-db').textContent = statusMsg;
+      document.getElementById('ss-src').textContent = 'Memori browser (data sementara)';
+      localRecs = SEED.map((r, i) => ({ ...r, id: 'loc-' + (i + 1), created_at: new Date().toISOString() }));
+      localCtr = SEED.length + 1;
+    }
+
+    // ═══════════════════════════════════════════════════
+    // DATA
+    // ═══════════════════════════════════════════════════
+    async function loadRecs() {
+      try {
+        if (useSB) {
+          const { data, error } = await sb.from('menstrual_records').select('*').order('start_date', { ascending: false });
+          if (error) throw error;
+          recs = data || [];
+        } else {
+          recs = [...localRecs].sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+        }
+      } catch (e) { toast('Gagal memuat data: ' + e.message, 'err'); recs = []; }
+    }
+
+    async function saveRec() {
+      const s = document.getElementById('f-start').value;
+      const e = document.getElementById('f-end').value;
+      const rt = document.querySelector('input[name="rt"]:checked')?.value || 'menstruasi';
+      const n = document.getElementById('f-notes').value.trim();
+      if (!s) { toast('Pilih tanggal mulai.', 'err'); return; }
+      if (e && e < s) { toast('Tanggal selesai tidak boleh sebelum tanggal mulai.', 'err'); return; }
+
+      const others = recs.filter(r => r.id !== editId);
+      const ov = overlap({ start_date: s, end_date: e || s }, others);
+      const payload = { start_date: s, end_date: e || null, record_type: rt, notes: n, needs_review: ov };
+
+      setBusy(true);
+      try {
+        if (useSB) {
+          const { error } = editId
+            ? await sb.from('menstrual_records').update(payload).eq('id', editId)
+            : await sb.from('menstrual_records').insert([payload]);
+          if (error) throw error;
+        } else {
+          if (editId) {
+            const i = localRecs.findIndex(r => r.id === editId);
+            if (i >= 0) localRecs[i] = { ...localRecs[i], ...payload };
+          } else {
+            localRecs.push({ ...payload, id: 'loc-' + (localCtr++), created_at: new Date().toISOString() });
+          }
+        }
+        await loadRecs();
+        toast(editId ? 'Catatan diperbarui.' : 'Catatan disimpan.', 'ok');
+        if (ov) toast('Ditandai untuk diperiksa karena tumpang tindih.', 'info');
+        editId = null; resetForm(); go('history');
+      } catch (e) { toast('Gagal: ' + e.message, 'err'); }
+      finally { setBusy(false); }
+    }
+
+    async function doDel() {
+      if (!delId) return;
+      try {
+        if (useSB) {
+          const { error } = await sb.from('menstrual_records').delete().eq('id', delId);
+          if (error) throw error;
+        } else { localRecs = localRecs.filter(r => r.id !== delId); }
+        await loadRecs();
+        toast('Catatan dihapus.', 'ok');
+        renderHist();
+      } catch (e) { toast('Gagal: ' + e.message, 'err'); }
+      finally { closeDel(); delId = null; }
+    }
+
+    // ═══════════════════════════════════════════════════
+    // NAVIGATION
+    // ═══════════════════════════════════════════════════
+    function go(page) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('page-' + page)?.classList.add('active');
+      document.querySelectorAll('.nav-btn,.bnav-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.page === page));
+      if (page === 'dashboard') renderDash();
+      if (page === 'calendar') renderCal();
+      if (page === 'history') renderHist();
+      if (page === 'record' && !editId) resetForm();
+      if (page === 'settings') renderSettings();
+      window.scrollTo(0, 0);
+    }
+
+    // ═══════════════════════════════════════════════════
+    // PREDICTION ENGINE
+    // ═══════════════════════════════════════════════════
+    function validMens() {
+      return recs
+        .filter(r => r.record_type === 'menstruasi' && !r.needs_review)
+        .sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+    }
+
+    function stats() {
+      const v = validMens();
+      if (!v.length) return { cy: 28, du: 5, last: null };
+      const cycs = [], durs = [];
+      for (let i = 1; i < v.length; i++) {
+        const d = diff(v[i - 1].start_date, v[i].start_date);
+        if (d >= 15 && d <= 60) cycs.push(d);
+      }
+      v.filter(r => r.end_date && r.end_date >= r.start_date).forEach(r => {
+        const d = diff(r.start_date, r.end_date) + 1;
+        if (d >= 1 && d <= 14) durs.push(d);
+      });
+      return {
+        cy: cycs.length ? Math.round(avg(cycs)) : 28,
+        du: durs.length ? Math.round(avg(durs)) : 5,
+        last: v[v.length - 1] || null
+      };
+    }
+
+    function preds(n = 4) {
+      const { cy, du, last } = stats();
+      if (!last) return [];
+      return Array.from({ length: n }, (_, i) => {
+        const s = addD(new Date(last.start_date), cy * (i + 1));
+        const e = addD(new Date(s), du - 1);
+        const nx = addD(new Date(s), cy);
+        return { s, e, fs: addD(nx, -16), fe: addD(nx, -12) };
+      });
+    }
+
+    // ═══════════════════════════════════════════════════
+    // DASHBOARD
+    // ═══════════════════════════════════════════════════
+    function renderDash() {
+      const st = stats(); const pd = preds(); const today = midnight(new Date());
+
+      document.getElementById('st-cycle').textContent = st.cy;
+      document.getElementById('st-dur').textContent = st.du;
+      document.getElementById('st-total').textContent = recs.length;
+
+      if (st.last) {
+        document.getElementById('st-last').textContent = fmt(st.last.start_date, 'short');
+        const ago = diff(st.last.start_date, today.toISOString().slice(0, 10));
+        document.getElementById('st-last-sub').textContent = ago === 0 ? 'Hari ini' : ago + ' hari lalu';
+      } else {
+        document.getElementById('st-last').textContent = '—';
+        document.getElementById('st-last-sub').textContent = 'Haid terakhir';
+      }
+
+      const nx = pd[0];
+      if (nx) {
+        const left = Math.round((nx.s - today) / 86400000);
+        document.getElementById('next-date').textContent = fmt(nx.s, 'long');
+        document.getElementById('next-cd').textContent = left > 0 ? `${left} hari lagi` : left === 0 ? 'Hari ini' : `${Math.abs(left)} hari lalu`;
+        document.getElementById('next-tags').innerHTML =
+          `<span class="tag gray">Siklus ~${st.cy} hari</span><span class="tag gray">Durasi ~${st.du} hari</span>`;
+      } else {
+        document.getElementById('next-date').textContent = 'Tambahkan data haid terlebih dahulu';
+        document.getElementById('next-cd').textContent = '';
+        document.getElementById('next-tags').innerHTML = '';
+      }
+
+      // Phases
+      const ph = document.getElementById('phases');
+      if (st.last) {
+        const cs = new Date(st.last.start_date);
+        const me = addD(new Date(cs), st.du - 1);
+        const ov = addD(new Date(cs), Math.round(st.cy / 2));
+        const le = addD(new Date(cs), st.cy - 1);
+        const fe = addD(new Date(ov), -3);
+        ph.innerHTML = [
+          { name: 'Menstruasi', color: '#e05a7a', s: cs, e: me },
+          { name: 'Folikular', color: '#f59e0b', s: me, e: fe },
+          { name: 'Ovulasi', color: '#10b981', s: fe, e: ov },
+          { name: 'Luteal', color: '#8b5cf6', s: ov, e: le },
+        ].map(p => `<div class="phase-cell">
+      <div class="phase-line" style="background:${p.color};"></div>
+      <div class="phase-cell-name">${p.name}</div>
+      <div class="phase-cell-dates">${fmt(p.s, 'short')} – ${fmt(p.e, 'short')}</div>
+    </div>`).join('');
+      } else {
+        ph.innerHTML = `<div style="color:var(--text-3);font-size:12px;grid-column:1/-1;padding:8px 0;">Tambahkan data haid untuk melihat fase siklus.</div>`;
+      }
+
+      // Recent
+      const el = document.getElementById('recent');
+      const top = recs.slice(0, 5);
+      el.innerHTML = top.length
+        ? top.map(r => `<div class="recent-row">
+        <div class="rec-dot" style="background:${dotColor(r.record_type)};border-radius:${r.record_type === 'menstruasi' ? '2px' : '50%'};"></div>
+        <div class="rec-info">
+          <div class="rec-date">${recDateStr(r)}</div>
+          <div class="rec-meta">${cap(r.record_type)} · ${recDur(r)} hari${r.needs_review ? ' · ⚠ perlu diperiksa' : ''}</div>
+        </div>
+      </div>`).join('')
+        : `<div class="empty"><p>Belum ada catatan.</p></div>`;
+    }
+
+    // ═══════════════════════════════════════════════════
+    // CALENDAR
+    // ═══════════════════════════════════════════════════
+    function renderCal() {
+      const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+      document.getElementById('cal-title').textContent = `${months[calM]} ${calY}`;
+      calPreds = preds(6);
+
+      const mensSet = new Set(), flekSet = new Set(), predSet = new Set(), fertSet = new Set();
+      recs.forEach(r => {
+        if (!r.start_date) return;
+        const s = new Date(r.start_date + 'T00:00:00'), e = r.end_date ? new Date(r.end_date + 'T00:00:00') : new Date(s);
+        if (isNaN(s) || isNaN(e) || e < s) return;
+        for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
+          const k = d.toISOString().slice(0, 10);
+          if (r.record_type === 'menstruasi') mensSet.add(k);
+          else if (r.record_type === 'flek') flekSet.add(k);
+        }
+      });
+      calPreds.forEach(p => {
+        for (let d = new Date(p.s); d <= p.e; d.setDate(d.getDate() + 1)) predSet.add(d.toISOString().slice(0, 10));
+        for (let d = new Date(p.fs); d <= p.fe; d.setDate(d.getDate() + 1)) {
+          const k = d.toISOString().slice(0, 10);
+          if (!mensSet.has(k) && !predSet.has(k)) fertSet.add(k);
+        }
+      });
+
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const todayStr = today.toISOString().slice(0, 10);
+      const fd = new Date(calY, calM, 1).getDay();
+      const dim = new Date(calY, calM + 1, 0).getDate();
+      const dip = new Date(calY, calM, 0).getDate();
+      const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+
+      let h = days.map(d => `<div class="cal-hdr">${d}</div>`).join('');
+      for (let i = 0; i < fd; i++) h += `<div class="cal-day other">${dip - fd + i + 1}</div>`;
+      for (let d = 1; d <= dim; d++) {
+        const ds = `${calY}-${String(calM + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        let cls = 'cal-day';
+        if (ds === todayStr) cls += ' today';
+        if (mensSet.has(ds)) cls += ' mens';
+        else if (flekSet.has(ds)) cls += ' spotting';
+        else if (predSet.has(ds)) cls += ' pred';
+        else if (fertSet.has(ds)) cls += ' fertile';
+        h += `<div class="${cls}" onclick="showDay('${ds}')">${d}</div>`;
+      }
+      const filled = fd + dim; const rem = (7 - filled % 7) % 7;
+      for (let i = 1; i <= rem; i++) h += `<div class="cal-day other">${i}</div>`;
+      document.getElementById('cal').innerHTML = h;
+      document.getElementById('day-panel').style.display = 'none';
+    }
+
+    function showDay(ds) {
+      const dr = recs.filter(r => { const s = r.start_date, e = r.end_date || r.start_date; return ds >= s && ds <= e; });
+      const ip = calPreds.some(p => { const s = p.s.toISOString().slice(0, 10), e = p.e.toISOString().slice(0, 10); return ds >= s && ds <= e; });
+      const panel = document.getElementById('day-panel');
+      if (!dr.length && !ip) { panel.style.display = 'none'; return; }
+      let h = `<div class="day-panel-title">${fmt(ds, 'long')}</div>`;
+      dr.forEach(r => {
+        h += `<span class="day-pill" style="background:${pillBg(r.record_type)};color:${pillTxt(r.record_type)};">${cap(r.record_type)}${r.notes ? ` — ${r.notes}` : ''}</span>`;
+      });
+      if (ip) h += `<span class="day-pill" style="background:#ede9fe;color:#7c3aed;">Prediksi haid</span>`;
+      panel.innerHTML = h; panel.style.display = 'block';
+    }
+
+    function prevM() { calM--; if (calM < 0) { calM = 11; calY--; } renderCal(); }
+    function nextM() { calM++; if (calM > 11) { calM = 0; calY++; } renderCal(); }
+
+    // ═══════════════════════════════════════════════════
+    // HISTORY
+    // ═══════════════════════════════════════════════════
+    function renderHist() {
+      const el = document.getElementById('hist-list');
+      let list = recs;
+      if (histFilt === 'flagged') list = recs.filter(r => r.needs_review);
+      else if (histFilt !== 'all') list = recs.filter(r => r.record_type === histFilt);
+
+      if (!list.length) {
+        el.innerHTML = `<div class="empty"><p>Tidak ada catatan untuk filter ini.</p></div>`;
+        return;
+      }
+      el.innerHTML = list.map(r => `
+    <div class="hist-row">
+      <div class="hist-dot" style="background:${dotColor(r.record_type)};border-radius:${r.record_type === 'menstruasi' ? '2px' : '50%'};"></div>
+      <div class="hist-info">
+        <div class="hist-date">${recDateStr(r)}</div>
+        <div class="hist-meta">${cap(r.record_type)} · ${recDur(r)} hari</div>
+        ${r.notes ? `<div class="hist-note">${r.notes}</div>` : ''}
+        ${r.needs_review ? `<span class="flag">⚠ Perlu diperiksa</span>` : ''}
+      </div>
+      <div class="hist-actions">
+        <button class="icon-btn" onclick="editRec('${r.id}')" title="Edit">✎</button>
+        <button class="icon-btn red" onclick="askDel('${r.id}')" title="Hapus">✕</button>
+      </div>
+    </div>`).join('');
+    }
+
+    function setFilter(f, btn) {
+      histFilt = f;
+      document.querySelectorAll('.flt').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      renderHist();
+    }
+
+    // ═══════════════════════════════════════════════════
+    // EDIT / DELETE
+    // ═══════════════════════════════════════════════════
+    function editRec(id) {
+      const r = recs.find(x => x.id === id); if (!r) return;
+      editId = id;
+      document.getElementById('edit-id').value = id;
+      document.getElementById('f-start').value = r.start_date;
+      document.getElementById('f-end').value = r.end_date || '';
+      document.getElementById('f-notes').value = r.notes || '';
+      document.getElementById('rec-title').textContent = 'Edit catatan';
+      document.getElementById('rec-sub').textContent = 'Perbarui data';
+      document.querySelectorAll('.radio-opt').forEach(o => {
+        const inp = o.querySelector('input');
+        o.classList.toggle('on', inp.value === r.record_type);
+        if (inp.value === r.record_type) inp.checked = true;
+      });
+      go('record');
+    }
+
+    function askDel(id) { delId = id; document.getElementById('del-modal').style.display = 'flex'; }
+    function closeDel(e) { if (!e || e.target.id === 'del-modal') document.getElementById('del-modal').style.display = 'none'; }
+    function cancelEdit() { editId = null; resetForm(); go('history'); }
+
+    function resetForm() {
+      editId = null;
+      ['edit-id', 'f-start', 'f-end', 'f-notes'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('ov-note').style.display = 'none';
+      document.getElementById('rec-title').textContent = 'Catat haid';
+      document.getElementById('rec-sub').textContent = 'Tambahkan data baru';
+      document.querySelectorAll('.radio-opt').forEach((o, i) => {
+        o.classList.toggle('on', i === 0); o.querySelector('input').checked = i === 0;
+      });
+    }
+
+    function pickType(el) {
+      document.querySelectorAll('.radio-opt').forEach(o => o.classList.remove('on'));
+      el.classList.add('on'); el.querySelector('input').checked = true;
+      checkOv();
+    }
+
+    ['f-start', 'f-end'].forEach(id => {
+      document.addEventListener('change', e => { if (e.target.id === id) checkOv(); });
+    });
+
+    function checkOv() {
+      const s = document.getElementById('f-start').value, e = document.getElementById('f-end').value;
+      if (!s) return;
+      const ov = overlap({ start_date: s, end_date: e || s }, recs.filter(r => r.id !== editId));
+      document.getElementById('ov-note').style.display = ov ? 'block' : 'none';
+    }
+
+    // ═══════════════════════════════════════════════════
+    // SETTINGS
+    // ═══════════════════════════════════════════════════
+    function renderSettings() {
+      const st = stats();
+      document.getElementById('ss-cycle').textContent = st.cy + ' hari';
+      document.getElementById('ss-dur').textContent = st.du + ' hari';
+      document.getElementById('ss-valid').textContent = validMens().length + ' catatan';
+      document.getElementById('ss-review').textContent = recs.filter(r => r.needs_review).length + ' catatan';
+      document.getElementById('s-name').value = userName;
+    }
+
+    function saveName() {
+      userName = document.getElementById('s-name').value.trim() || 'Aulia';
+      localStorage.setItem('aulia_name', userName);
+      document.getElementById('dash-title').textContent = `Selamat datang, ${userName}`;
+      toast('Nama disimpan.', 'ok');
+    }
+
+    function exportCSV() {
+      if (!recs.length) { toast('Tidak ada data.', 'info'); return; }
+      const rows = ['Tanggal Mulai,Tanggal Selesai,Jenis,Catatan,Perlu Diperiksa'];
+      recs.forEach(r => rows.push(`${r.start_date},${r.end_date || ''},${r.record_type},"${(r.notes || '').replace(/"/g, '""')}",${r.needs_review}`));
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv' }));
+      a.download = 'aulia_data.csv'; a.click();
+      toast('Ekspor selesai.', 'ok');
+    }
+
+    // ═══════════════════════════════════════════════════
+    // UI HELPERS
+    // ═══════════════════════════════════════════════════
+    function setBusy(on) {
+      const btn = document.getElementById('btn-save');
+      btn.disabled = on;
+      document.getElementById('save-txt').textContent = on ? 'Menyimpan…' : 'Simpan';
+    }
+
+    function toast(msg, type = 'info') {
+      const c = document.getElementById('toasts');
+      const el = document.createElement('div');
+      el.className = `tst ${type}`;
+      el.textContent = msg;
+      c.appendChild(el);
+      setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 250); }, 3500);
+    }
+
+    // ═══════════════════════════════════════════════════
+    // UTILS
+    // ═══════════════════════════════════════════════════
+    function overlap(r, existing) {
+      const ns = new Date(r.start_date), ne = new Date(r.end_date || r.start_date);
+      for (const x of existing) {
+        const xs = new Date(x.start_date), xe = new Date(x.end_date || x.start_date);
+        if (xs > xe) continue;
+        if (ns <= xe && ne >= xs) return true;
+      }
+      return false;
+    }
+
+    function diff(a, b) {
+      const toD = s => new Date(typeof s === 'string' ? s + 'T00:00:00' : s);
+      return Math.round((toD(b) - toD(a)) / 86400000);
+    }
+    function addD(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
+    function avg(a) { return a.reduce((x, y) => x + y, 0) / a.length; }
+    function midnight(d) { const r = new Date(d); r.setHours(0, 0, 0, 0); return r; }
+
+    function fmt(d, style) {
+      if (!d) return '—';
+      const dt = typeof d === 'string' ? new Date(d + 'T00:00:00') : d;
+      if (isNaN(dt)) return '—';
+      if (style === 'short') return dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+      if (style === 'long') return dt.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      return dt.toLocaleDateString('id-ID');
+    }
+
+    function cap(s) { return s ? s[0].toUpperCase() + s.slice(1) : ''; }
+    function dotColor(t) { return t === 'menstruasi' ? '#e05a7a' : t === 'flek' ? '#f9d0d9' : '#c4b5fd'; }
+    function pillBg(t) { return t === 'menstruasi' ? '#fdf0f3' : t === 'flek' ? '#fce7f3' : '#ede9fe'; }
+    function pillTxt(t) { return t === 'menstruasi' ? '#e05a7a' : t === 'flek' ? '#be185d' : '#7c3aed'; }
+
+    function recDateStr(r) {
+      const hasEnd = r.end_date && r.end_date >= r.start_date;
+      return hasEnd && r.end_date !== r.start_date
+        ? `${fmt(r.start_date, 'short')} – ${fmt(r.end_date, 'short')}`
+        : fmt(r.start_date, 'short');
+    }
+    function recDur(r) {
+      if (!r.end_date || r.end_date < r.start_date) return 1;
+      return diff(r.start_date, r.end_date) + 1;
+    }
+  </script>
+</body>
+
+</html>
